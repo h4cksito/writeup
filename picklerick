@@ -1,0 +1,87 @@
+TryHackMe Writeup – Pickle Rick
+Autor: Daniel
+Fecha de finalización: 29/06/2025
+■ TryHackMe: Pickle Rick - Writeup
+**Autor:** Daniel
+**Fecha de finalización:** 29/06/2025
+**Dificultad:** Fácil
+**URL de la sala:** [https://tryhackme.com/room/picklerick](https://tryhackme.com/room/picklerick)
+**Objetivo:** Encontrar los 3 ingredientes secretos para ayudar a Rick a volver a su forma humana.
+---
+■■■■■ 1. Enumeración inicial
+- Se accede a la dirección IP proporcionada por TryHackMe.
+- Se inspecciona el código fuente de la página (`F12`) y se descubre el nombre de usuario:
+`R1ckRul3s`.
+Descubrimiento de rutas:
+- Se utilizó `dirb` para encontrar rutas ocultas:
+```bash
+dirb http://10.10.X.X
+```
+- Se encontraron:
+- `/robots.txt` -> contenía la cadena: `Wubbalubbadubdub`
+- `/index.html`
+- `/server-status` (acceso denegado)
+---
+■ 2. Acceso a la consola web
+- Se intuye la ruta `/login` (no descubierta por `dirb` pero común).
+- Se prueban credenciales encontradas:
+- Usuario: `R1ckRul3s`
+- Contraseña: `Wubbalubbadubdub`
+- Acceso concedido a una **"consola falsa"** (web shell simulada).
+---
+■ 3. Búsqueda de los ingredientes
+Ingrediente 1:
+- Listando con `ls` se encuentra el archivo:
+`Sup3rS3cretPickl3Ingred.txt`
+- Se usa `less` para leerlo (otros comandos como `cat` estaban deshabilitados).
+```bash
+less Sup3rS3cretPickl3Ingred.txt
+```
+- Resultado:
+```
+First Ingredient: mr. meeseek hair
+```
+---
+Ingrediente 2:
+- Se encuentra una pista en `clue.txt` que sugiere mirar por el sistema.
+```bash
+cat clue.txt
+```
+- Se intenta acceder al archivo `/home/rick/second ingredients` sin éxito inicial por mal uso del
+escape del espacio.
+- Finalmente se accede correctamente con:
+```bash
+less /home/rick/second\ ingredients
+```
+- Resultado:
+```
+Second Ingredient: 1 jerry tear
+```
+---
+Ingrediente 3:
+- Se ejecuta `sudo -l` y se comprueba que se puede ejecutar todo como root:
+```bash
+sudo -l
+sudo su
+```
+- Se accede a `/root` y se encuentra el archivo con el tercer ingrediente:
+```bash
+ls /root
+less 3rd.txt
+```
+- Resultado:
+```
+Third Ingredient: fleeb juice
+```
+---
+■ Ingredientes obtenidos
+1. **First:** mr. meeseek hair
+2. **Second:**  1 jerry tear
+3. **Third:** fleeb juice
+---
+■ Conclusión
+- La sala simula una consola web falsa, por lo que no todos los comandos funcionan como en una
+shell real.
+- Aprendí la importancia de escapar correctamente los espacios (`\ `) al trabajar con rutas en Bash.
+- Esta sala es ideal para comenzar a pensar como un pentester: analizar, deducir y probar rutas
+típicas.
