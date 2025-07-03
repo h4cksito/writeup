@@ -1,0 +1,88 @@
+Writeup: CaptchApocalypse – TryHackMe
+Índice
+Introducción
+
+Reconocimiento y Enumeración
+
+Análisis del Login y CAPTCHA
+
+Automatización y OCR
+
+Implementación Multihilo con Selenium
+
+Resultados y Obtención de la Flag
+
+Lecciones aprendidas y conclusiones
+
+1. Introducción
+En este writeup detallo la explotación completa de la sala CaptchApocalypse de TryHackMe. El objetivo principal era obtener acceso mediante un sistema de login protegido con un CAPTCHA dinámico y token CSRF, y realizar un ataque de fuerza bruta automatizado para encontrar la contraseña correcta del usuario admin.
+
+2. Reconocimiento y Enumeración
+IP víctima: 10.10.147.36
+
+Se identificó un formulario de login que requería:
+
+Usuario
+
+Contraseña
+
+CAPTCHA dinámico
+
+Token CSRF para validación
+
+Herramientas utilizadas: navegador, Burp Suite para inspeccionar las peticiones, nmap para escaneo inicial.
+
+3. Análisis del Login y CAPTCHA
+El CAPTCHA no era un simple texto estático sino una imagen generada dinámicamente, acompañada de una animación en la web.
+
+El token CSRF cambiaba con cada carga de página y era obligatorio para la validación del formulario.
+
+La petición POST se enviaba a /server.php y la respuesta indicaba éxito o fallo con mensajes y redirección.
+
+Se comprobó que la protección anti-bot pasaba por la correcta resolución del CAPTCHA y envío del token válido.
+
+4. Automatización y OCR
+Dado que el CAPTCHA cambiaba dinámicamente y era una imagen, la estrategia manual era inviable. Se optó por:
+
+Capturar la imagen CAPTCHA directamente desde el navegador usando Selenium.
+
+Aplicar procesamiento de imagen con Pillow para mejorar la lectura (escalado 5x, binarización).
+
+Utilizar Tesseract OCR con una whitelist para limitar caracteres reconocidos a mayúsculas y números.
+
+Validar la lectura comparándola visualmente con los captchas guardados.
+
+5. Implementación Multihilo con Selenium
+Para acelerar la fuerza bruta, se implementó un script Python con:
+
+Selenium en modo headless para emular un navegador real y manejar JS, animaciones y token CSRF.
+
+Concurrent Futures ThreadPoolExecutor para probar múltiples contraseñas simultáneamente.
+
+Un evento sincronizado que detiene todos los hilos en cuanto se detecta el login exitoso.
+
+Reintentos automáticos para contraseñas cuyo captcha fue mal interpretado o falló.
+
+Este enfoque garantizó que no se perdieran intentos válidos y que la solución se encontrara rápidamente.
+
+6. Resultados y Obtención de la Flag
+La contraseña encontrada fue tinkerbell, situada entre las primeras 100 contraseñas comunes del diccionario rockyou.txt.
+
+La autenticación exitosa mostró la flag:
+THM{8938aed9bf43bddb7c0a98f292dca00}
+
+Este resultado confirmó la validez del método automatizado y la importancia del procesamiento correcto del CAPTCHA.
+
+7. Lecciones aprendidas y conclusiones
+El OCR es fundamental en retos con CAPTCHAs visuales, y su precisión mejora notablemente con preprocesamiento de imagen y whitelist.
+
+La emulación completa de un navegador real (JS, animaciones) con Selenium es indispensable para manejar sistemas con tokens dinámicos y CAPTCHA.
+
+La concurrencia multiproceso acelera la fuerza bruta y mejora la eficiencia.
+
+Guardar y analizar captchas y resultados OCR es clave para depurar y asegurar la precisión.
+
+Automatizar la fuerza bruta contra sistemas con CAPTCHA no es trivial, pero es factible con la combinación correcta de herramientas y técnicas.
+
+Código y recursos
+El script completo desarrollado está basado en la integración de Selenium, Pillow y pytesseract, y puede encontrarse en 
